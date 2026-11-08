@@ -32,6 +32,7 @@ A game by Obin and Oyun. This file keeps what they decided, in their words, so e
 - Goalies are controlled by hand too: front, left, right, back = catch (dive) that way.
 - To control a different player, tap that player on the screen (or press Tab).
 - Power-up: tap the falling gift with your finger, or run into it. Press the big FIRE button (or Space) to use it.
+- **Auto-switch:** when the ball goes to another player on your team, you automatically control that player (a "YOU!" tag pops up). It won't switch if you already have the ball, and it waits a moment after any switch so it doesn't flicker. Requested by Issac.
 - If nobody is pressing anything for a second, the selected player plays by himself so the team never stands still. (Added by Claude, not in Obin and Oyun's list. Ask them if they like it.)
 
 ## Win rule

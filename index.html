@@ -483,6 +483,16 @@ function userControl(p) {
 }
 
 // ---------- the per-frame control pass
+// when a teammate gets the ball, hand control to him so the kid can play
+function autoSwitch(p) {
+  const G = S.G;
+  if (p === G.sel || p.stun > 0 || p.role === 'gk' || p.side !== 'me') return;
+  if (G.switchCool > 0) return;
+  const sel = G.sel;
+  if (sel && sel.stun <= 0 && dist(sel, G.ball) < REACH + 10) return;   // you already have it
+  G.sel = p; G.switchCool = 0.6;
+  floatText(G, 'YOU!', p.x, p.y - 34, '#ffee55', 16);
+}
 function cycleSelected() {
   const G = S.G;
   const mine = G.players.filter(p => p.side === 'me' && p.stun <= 0);
@@ -492,7 +502,8 @@ function cycleSelected() {
 }
 function control(dt) {
   const G = S.G, b = G.ball;
-  if (queue.sw) cycleSelected();
+  G.switchCool = Math.max(0, (G.switchCool || 0) - dt);
+  if (queue.sw) { cycleSelected(); G.switchCool = 1.5; }
   if (!G.sel || G.sel.stun > 0) {
     let best = null, bd = 1e9;
     for (const p of G.players) if (p.side === 'me' && p.role !== 'gk' && p.stun <= 0) { const d = dist(p, b); if (d < bd) { bd = d; best = p; } }
@@ -594,7 +605,7 @@ function tapPitch(p) {
     const d = Math.hypot(pl.x - p.x, pl.y - p.y);
     if (d < bd) { bd = d; best = pl; }
   }
-  if (best) { G.sel = best; sfx.click(); }
+  if (best) { G.sel = best; G.switchCool = 1.5; sfx.click(); }
 }
 function damageMonster(m, dmg) {
   const G = S.G;
@@ -789,6 +800,7 @@ function stepBall(h) {
     const d = dist(p, b);
     if (d < PR + BR && d > 0.001) {
       bounceOff(b, p, PR + BR, 0.3);
+      autoSwitch(p);
       const ps = Math.hypot(p.vx, p.vy);
       if (ps > 20) { b.vx += p.vx * 0.12; b.vy += p.vy * 0.12; }
       b.lastSide = p.side;
