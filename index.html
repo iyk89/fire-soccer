@@ -147,6 +147,47 @@ const S = {
   embers: [],
   fx: [],               // menu-level particles (unused in play)
 };
+// ---------- saved coins and unlocks (kept on this device)
+const SAVE_KEY = 'firesoccer.v1';
+const SHOP = {
+  ball: [
+    { id: 'classic', name: 'Classic', cost: 0 }, { id: 'gold', name: 'Gold Ball', cost: 20 },
+    { id: 'fire', name: 'Fire Ball', cost: 40 }, { id: 'galaxy', name: 'Galaxy Ball', cost: 60 },
+    { id: 'rainbow', name: 'Rainbow Ball', cost: 80 },
+  ],
+  trail: [
+    { id: 'none', name: 'No Trail', cost: 0 }, { id: 'fire', name: 'Fire Trail', cost: 30 },
+    { id: 'ice', name: 'Ice Trail', cost: 30 }, { id: 'sparkle', name: 'Sparkle Trail', cost: 50 },
+    { id: 'lightning', name: 'Lightning', cost: 70 },
+  ],
+};
+const save = { coins: 0, owned: { ball_classic: true, trail_none: true }, ball: 'classic', trail: 'none' };
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (typeof d.coins === 'number') save.coins = d.coins;
+    if (d.owned && typeof d.owned === 'object') Object.assign(save.owned, d.owned);
+    if (typeof d.ball === 'string' && save.owned['ball_' + d.ball]) save.ball = d.ball;
+    if (typeof d.trail === 'string' && save.owned['trail_' + d.trail]) save.trail = d.trail;
+  } catch (e) { /* no saving available, that's okay */ }
+}
+function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } }
+loadSave();
+function bankCoins() {                       // keep the coins you collected in a Level 2 match
+  const G = S.G;
+  if (!G || G.level !== 2 || G.banked) return;
+  G.banked = true; save.coins += G.coins; writeSave();
+}
+function shopClick(kind, item) {
+  const key = kind + '_' + item.id;
+  if (save.owned[key]) { save[kind] = item.id; writeSave(); sfx.click(); S.shopMsg = item.name + ' is on!'; }
+  else if (save.coins >= item.cost) {
+    save.coins -= item.cost; save.owned[key] = true; save[kind] = item.id; writeSave(); sfx.gem(); S.shopMsg = 'Unlocked ' + item.name + '!';
+  } else { sfx.stun(); S.shopMsg = 'You need ' + (item.cost - save.coins) + ' more coins'; }
+  S.shopMsgT = 2.2;
+}
 for (let i = 0; i < 46; i++) S.embers.push(newEmber(true));
 function newEmber(anywhere) {
   return { x: rand(0, W), y: anywhere ? rand(0, H) : H + 10, vy: rand(18, 60), vx: rand(-8, 8), r: rand(1, 3.2), ph: rand(0, 6.28) };
@@ -920,6 +961,7 @@ function showResult() {
     else if (clear) { kind = 'lose'; title = draw ? 'DRAW!' : 'YOU LOSE'; lines = ['You beat all the monsters,', 'but you need more goals.']; }
     else { kind = 'lose'; title = draw ? 'DRAW!' : 'YOU LOSE'; lines = ['Beat the monsters', 'and score more goals.']; }
   }
+  bankCoins();
   S.result = { kind, title, lines };
   S.screen = 'result';
   resetInput();
@@ -964,6 +1006,7 @@ function update(dt) {
       if (G.phaseT <= 0) showResult();
       break;
   }
+  if (G.phase === 'play' || G.phase === 'goal') ballTrail(G);
   queue.tap = false; queue.sw = false;
   for (const d of DIRS) queue.press[d] = false;
 }
@@ -1083,8 +1126,47 @@ function drawTitle() {
   for (let i = 0; i < 5; i++) { const a = i * 1.2566; ctx.beginPath(); ctx.arc(Math.cos(a) * 40, Math.sin(a) * 40, 9, 0, 6.283); ctx.fill(); }
   ctx.restore();
   txt('A game by Obin & Oyun', W / 2, 610, 26, '#ffe9b8', 'center', 'rgba(60,10,0,.8)');
-  button(120, 670, 300, 96, 'PLAY', goCountry, { size: 52 });
-  txt('Keys: W A S D  (or tap the big square)', W / 2, 810, 16, '#ffd9a0', 'center', null, '600');
+  button(120, 660, 300, 96, 'PLAY', goCountry, { size: 52 });
+  button(150, 776, 240, 64, 'LOCKER', () => goLocker('title'), { size: 30, c1: '#ffd23f', c2: '#e09a00', stroke: '#fff3b0' });
+  drawBank(W - 18, 28, 'right');
+  txt('Keys: W A S D  (or tap the big square)', W / 2, 890, 16, '#ffd9a0', 'center', null, '600');
+}
+function drawCoinIcon(x, y, r) {
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fillStyle = '#ffc928'; ctx.fill(); ctx.lineWidth = Math.max(2, r * 0.22); ctx.strokeStyle = '#9a6200'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, 6.283); ctx.lineWidth = Math.max(1.4, r * 0.15); ctx.strokeStyle = 'rgba(154,98,0,.7)'; ctx.stroke();
+}
+function drawBank(x, y, align) {
+  const t = String(save.coins);
+  ctx.font = `800 26px ${FONT}`;
+  const w = ctx.measureText(t).width;
+  const left = align === 'right' ? x - w : x;
+  drawCoinIcon(left - 18, y, 12);
+  txt(t, left, y + 1, 26, '#ffe9b8', 'left', 'rgba(60,10,0,.8)');
+}
+function goLocker(from) { S.lockerBack = from; S.screen = 'locker'; S.shopMsg = ''; S.shopMsgT = 0; }
+function drawLocker() {
+  drawHeader('LOCKER', null);
+  drawBank(W / 2 - 24, 116, 'left');
+  const section = (title, kind, y0) => {
+    txt(title, 33, y0, 22, '#ffd9a0', 'left', 'rgba(60,10,0,.8)');
+    SHOP[kind].forEach((it, i) => {
+      const x = 33 + (i % 3) * 162, y = y0 + 18 + Math.floor(i / 3) * 138, w = 150, h = 128;
+      S.buttons.push({ x, y, w, h, fn: () => shopClick(kind, it) });
+      const owned = !!save.owned[kind + '_' + it.id], on = save[kind] === it.id;
+      rrect(x, y, w, h, 18); ctx.fillStyle = on ? 'rgba(255,210,63,.22)' : 'rgba(255,255,255,.1)'; ctx.fill();
+      ctx.lineWidth = on ? 4 : 2.5; ctx.strokeStyle = on ? '#ffd23f' : 'rgba(255,200,120,.55)'; ctx.stroke();
+      if (kind === 'ball') drawBallArt(x + w / 2, y + 44, 20, it.id, S.t * 0.8);
+      else { drawBallArt(x + w / 2 + 28, y + 44, 14, 'classic', S.t); drawTrailSample(x + w / 2 + 28, y + 44, it.id); }
+      fitTxt(it.name, x + w / 2, y + 88, 16, w - 12, '#fff', 'center', 'rgba(60,10,0,.8)');
+      if (on) txt('IN USE', x + w / 2, y + 111, 15, '#ffd23f');
+      else if (owned) txt('TAP TO USE', x + w / 2, y + 111, 14, '#9dffb0');
+      else { drawCoinIcon(x + w / 2 - 18, y + 111, 9); txt(String(it.cost), x + w / 2 - 4, y + 112, 18, save.coins >= it.cost ? '#fff' : '#ff9a8a', 'left'); }
+    });
+  };
+  section('BALLS', 'ball', 168);
+  section('SHOT TRAILS', 'trail', 478);
+  if (S.shopMsgT > 0) { S.shopMsgT -= 1 / 60; rrect(70, 818, 400, 44, 22); ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fill(); txt(S.shopMsg, W / 2, 840, 21, '#fff'); }
+  button(170, 880, 200, 56, 'BACK', () => { S.screen = S.lockerBack || 'title'; }, { size: 24, c1: '#7a7a8a', c2: '#464658' });
 }
 function drawHeader(title, sub) {
   drawBackdrop();
@@ -1181,13 +1263,55 @@ function drawPitch() {
   ctx.strokeRect(PITCH.cx - 130, PITCH.b - 95, 260, 95); ctx.strokeRect(PITCH.cx - 65, PITCH.b - 40, 130, 40);
   drawGoal(true); drawGoal(false);
 }
+function drawBallArt(x, y, r, style, rotA) {
+  ctx.save(); ctx.translate(x, y);
+  if (style === 'fire') {
+    const gl = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 2.4);
+    gl.addColorStop(0, 'rgba(255,170,40,.65)'); gl.addColorStop(1, 'rgba(255,60,0,0)');
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, r * 2.4, 0, 6.283); ctx.fill();
+  }
+  ctx.rotate(rotA);
+  const lw = Math.max(1.2, r * 0.16);
+  if (style === 'rainbow') {
+    const cols = ['#ff3b3b', '#ff9a1a', '#ffe134', '#3fd35a', '#2aa8ff', '#8a5bff'];
+    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, r, i * Math.PI / 3, (i + 1) * Math.PI / 3); ctx.closePath(); ctx.fillStyle = cols[i]; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.lineWidth = lw; ctx.strokeStyle = '#222'; ctx.stroke();
+  } else {
+    const fills = { classic: ['#ffffff', '#e4e4e4'], gold: ['#fff3a0', '#d68a00'], fire: ['#ffe45c', '#ff3b1a'], galaxy: ['#7a4cff', '#14043a'] };
+    const f = fills[style] || fills.classic;
+    const g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+    g.addColorStop(0, f[0]); g.addColorStop(1, f[1]);
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = lw; ctx.strokeStyle = style === 'gold' ? '#7a4a00' : style === 'fire' ? '#7a1500' : style === 'galaxy' ? '#c9b6ff' : '#222'; ctx.stroke();
+    ctx.fillStyle = style === 'gold' ? '#9a6200' : style === 'fire' ? '#8a1a00' : style === 'galaxy' ? '#ffffff' : '#222';
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.33, 0, 6.283); ctx.fill();
+    for (let i = 0; i < 5; i++) { const a = i * 1.2566; ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.68, Math.sin(a) * r * 0.68, r * 0.19, 0, 6.283); ctx.fill(); }
+    if (style === 'galaxy') { ctx.fillStyle = '#fff'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(Math.cos(i * 2.4 + 1) * r * 0.5, Math.sin(i * 2.4 + 1) * r * 0.5, r * 0.07, 0, 6.283); ctx.fill(); } }
+  }
+  ctx.restore();
+}
 function drawBall(b) {
-  ctx.save(); ctx.translate(b.x, b.y);
-  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(1, 5, BR, BR * 0.55, 0, 0, 6.283); ctx.fill();
-  ctx.rotate(b.rot);
-  ctx.beginPath(); ctx.arc(0, 0, BR, 0, 6.283); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#222'; ctx.stroke();
-  ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(0, 0, 2.6, 0, 6.283); ctx.fill();
-  for (let i = 0; i < 5; i++) { const a = i * 1.2566; ctx.beginPath(); ctx.arc(Math.cos(a) * 5.4, Math.sin(a) * 5.4, 1.5, 0, 6.283); ctx.fill(); }
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(b.x + 1, b.y + 5, BR, BR * 0.55, 0, 0, 6.283); ctx.fill();
+  drawBallArt(b.x, b.y, BR, save.ball, b.rot);
+}
+const TRAIL_COLORS = { fire: ['#ff6a1a', '#ffd23f', '#ff3b1a'], ice: ['#bff3ff', '#7df3ff', '#ffffff'], sparkle: ['#ffffff', '#ffe45c', '#ff9ae8', '#7df3ff'] };
+function ballTrail(G) {                          // the trail you unlocked, shown behind a fast ball
+  const b = G.ball, pv = G.ballPrev || { x: b.x, y: b.y };
+  const tr = save.trail;
+  if (tr !== 'none' && !b.holdBy && Math.hypot(b.vx, b.vy) > 140) {
+    if (tr === 'lightning') fx(G, { type: 'line', x: pv.x, y: pv.y, x2: b.x + rand(-6, 6), y2: b.y + rand(-6, 6), life: 0.3, size: 4, color: '#7df3ff' });
+    else {
+      const cols = TRAIL_COLORS[tr], n = tr === 'sparkle' ? 2 : 3;
+      for (let i = 0; i < n; i++) fx(G, { type: 'spark', x: b.x + rand(-3, 3), y: b.y + rand(-3, 3), vx: rand(-25, 25), vy: rand(-25, 25), life: tr === 'sparkle' ? 0.7 : 0.45, size: tr === 'sparkle' ? rand(2, 4.5) : rand(3, 6), color: cols[Math.floor(Math.random() * cols.length)] });
+    }
+  }
+  G.ballPrev = { x: b.x, y: b.y };
+}
+function drawTrailSample(x, y, style) {
+  ctx.save();
+  if (style === 'none') { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x - 36, y - 10); ctx.lineTo(x - 14, y + 10); ctx.stroke(); }
+  else if (style === 'lightning') { ctx.strokeStyle = '#7df3ff'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x - 46, y + 12); ctx.lineTo(x - 36, y - 2); ctx.lineTo(x - 28, y + 10); ctx.lineTo(x - 18, y - 4); ctx.lineTo(x - 10, y + 4); ctx.stroke(); }
+  else { const cols = TRAIL_COLORS[style]; for (let i = 0; i < 9; i++) { ctx.globalAlpha = 1 - i / 10; ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.arc(x - 12 - i * 5, y + 2 + (i % 2) * 3, 6 - i * 0.5, 0, 6.283); ctx.fill(); } }
   ctx.restore();
 }
 function drawPlayer(p, isSel) {
@@ -1469,8 +1593,8 @@ function drawPause() {
   ctx.fillStyle = 'rgba(0,0,0,.72)'; ctx.fillRect(0, 0, W, H);
   flameText('PAUSED', W / 2, 250, 76);
   button(110, 360, 320, 90, 'RESUME', () => { S.paused = false; }, { size: 40 });
-  button(110, 480, 320, 80, 'CHANGE TEAM', () => { S.paused = false; S.screen = 'level'; resetInput(); }, { size: 28, c1: '#6a6ad8', c2: '#3a3a9a', stroke: '#c8c8ff' });
-  button(110, 590, 320, 80, 'MAIN MENU', () => { goTitle(); }, { size: 28, c1: '#7a7a8a', c2: '#464658' });
+  button(110, 480, 320, 80, 'CHANGE TEAM', () => { bankCoins(); S.paused = false; S.screen = 'level'; resetInput(); }, { size: 28, c1: '#6a6ad8', c2: '#3a3a9a', stroke: '#c8c8ff' });
+  button(110, 590, 320, 80, 'MAIN MENU', () => { bankCoins(); goTitle(); }, { size: 28, c1: '#7a7a8a', c2: '#464658' });
   txt('Keys: W A S D move   Space = fire   Tab = switch player', W / 2, 740, 14, '#ffd9a0', 'center', null, '600');
 }
 function drawResult() {
@@ -1482,14 +1606,15 @@ function drawResult() {
   txt(S.myTeam.name + '  ' + G.score.me + '  -  ' + G.score.opp + '  ' + S.oppTeam.name, W / 2, 290, 26, '#fff', 'center', 'rgba(0,0,0,.7)');
   if (G.level === 2) {
     txt('Monsters beaten: ' + G.kills + ' of ' + G.totalMonsters, W / 2, 322, 22, '#e0c4ff', 'center', 'rgba(0,0,0,.7)');
-    txt('Prize coins: ' + G.coins, W / 2, 352, 22, '#ffd23f', 'center', 'rgba(0,0,0,.7)');
+    txt('Coins saved: +' + G.coins + '   Total: ' + save.coins, W / 2, 352, 22, '#ffd23f', 'center', 'rgba(0,0,0,.7)');
   }
   r.lines.forEach((l, i) => txt(l, W / 2, 392 + i * 34, 25, '#ffe9b8', 'center', 'rgba(0,0,0,.7)'));
   let y = 500;
   if (r.kind === 'win' && G.level === 1) { button(90, y, 360, 90, 'NEXT: LEVEL 2', () => startMatch(2), { size: 36, c1: '#b58cff', c2: '#6a2ad8', stroke: '#e8d6ff' }); y += 110; }
   button(90, y, 360, 80, 'PLAY AGAIN', () => startMatch(G.level), { size: 32 }); y += 100;
   button(90, y, 360, 70, 'CHANGE TEAM', () => { S.screen = 'level'; }, { size: 26, c1: '#6a6ad8', c2: '#3a3a9a', stroke: '#c8c8ff' }); y += 90;
-  button(90, y, 360, 70, 'MAIN MENU', goTitle, { size: 26, c1: '#7a7a8a', c2: '#464658' });
+  button(90, y, 175, 70, 'LOCKER', () => goLocker('result'), { size: 24, c1: '#ffd23f', c2: '#e09a00', stroke: '#fff3b0' });
+  button(275, y, 175, 70, 'MAIN MENU', goTitle, { size: 22, c1: '#7a7a8a', c2: '#464658' });
 }
 function draw() {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -1500,6 +1625,7 @@ function draw() {
     case 'country': drawCountry(); break;
     case 'team': drawTeam(); break;
     case 'level': drawLevel(); break;
+    case 'locker': drawLocker(); break;
     case 'play': drawPlay(); if (S.paused) drawPause(); break;
     case 'result': drawResult(); break;
   }
@@ -1515,7 +1641,7 @@ function frame(t) {
 requestAnimationFrame(frame);
 
 // handy for testing
-window.__fs = { S, update, draw, startMatch, goLevel, TEAMS, COUNTRIES, input, queue, kb, recompute, onDown, onUp, onMove, PAD, FIRE, PITCH, GOAL, spawnMonster, spawnItem, spawnPrize, collectPrize, damageMonster, tapPitch, collectItem, useWeapon, showResult, endMatch };
+window.__fs = { S, update, draw, startMatch, goLevel, TEAMS, COUNTRIES, input, queue, kb, recompute, onDown, onUp, onMove, PAD, FIRE, PITCH, GOAL, save, goLocker, shopClick, bankCoins, spawnMonster, spawnItem, spawnPrize, collectPrize, damageMonster, tapPitch, collectItem, useWeapon, showResult, endMatch };
 })();
 </script>
 </body>

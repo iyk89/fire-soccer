@@ -30,7 +30,14 @@ A game by Obin and Oyun. This file keeps what they decided, in their words, so e
 - Big monster drops a **diamond** (worth 5 coins). It gives a **shield for 8 seconds** (monsters can't make your team dizzy), **wakes up any dizzy teammates**, and a **free power-up gift** lands nearby.
 - Prizes drift toward you when you get close, and disappear after 14 seconds (they blink at the end).
 - A coin counter shows on screen and on the final results screen.
-- **Open question:** what should coins be used for? Issac asked. Ideas: spend 10 coins on a free power-up; save coins between games to unlock things; coins make a star rating at the end.
+- **Coins are saved** on the device after every Level 2 match (even if you lose, you keep what you collected). Issac picked this option.
+- **Locker** (button on the title screen and the results screen): spend coins on
+  - Balls: Classic (free), Gold (20), Fire (40), Galaxy (60), Rainbow (80)
+  - Shot trails (shown behind a fast ball): None (free), Fire (30), Ice (30), Sparkle (50), Lightning (70)
+  - Tap an item you own to use it. Tap one you don't own to buy it. Unlocks stay after you close the game.
+- A full Level 2 clear is worth about 24 coins, so the first unlock takes about one good run.
+- Saved coins live in the browser on that one device. Another tablet or browser starts at zero.
+- **Still to ask Obin and Oyun:** what else should coins buy? (new stadiums, goal celebrations, team kits, a golden player?)
 
 ## Controls
 - Field players: **W A S D** on a keyboard, or the big square at the bottom of the tablet.
