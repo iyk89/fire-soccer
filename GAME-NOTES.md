@@ -25,6 +25,13 @@ A game by Obin and Oyun. This file keeps what they decided, in their words, so e
 - Players already exist in the game. You pick from them. You don't build characters.
 - Each team shows **Power** (stars) and **Speed** (lightning bolts) on the team list. Added at Issac's request, and both are real: Speed changes how fast the team runs, and Power changes shot strength and goalie skill.
 
+## Prizes (when you beat a monster)
+- Small monster drops a **gold coin**. Collect it (run into it, or tap it) and your whole team **runs 30% faster for 5 seconds**.
+- Big monster drops a **diamond** (worth 5 coins). It gives a **shield for 8 seconds** (monsters can't make your team dizzy), **wakes up any dizzy teammates**, and a **free power-up gift** lands nearby.
+- Prizes drift toward you when you get close, and disappear after 14 seconds (they blink at the end).
+- A coin counter shows on screen and on the final results screen.
+- **Open question:** what should coins be used for? Issac asked. Ideas: spend 10 coins on a free power-up; save coins between games to unlock things; coins make a star rating at the end.
+
 ## Controls
 - Field players: **W A S D** on a keyboard, or the big square at the bottom of the tablet.
   - Front: tap = shoot, hold = run forward
