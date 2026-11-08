@@ -26,10 +26,18 @@ A game by Obin and Oyun. This file keeps what they decided, in their words, so e
 - Each team shows **Power** (stars) and **Speed** (lightning bolts) on the team list. Added at Issac's request, and both are real: Speed changes how fast the team runs, and Power changes shot strength and goalie skill.
 
 ## Prizes (when you beat a monster)
-- Small monster drops a **gold coin**. Collect it (run into it, or tap it) and your whole team **runs 30% faster for 5 seconds**.
-- Big monster drops a **diamond** (worth 5 coins). It gives a **shield for 8 seconds** (monsters can't make your team dizzy), **wakes up any dizzy teammates**, and a **free power-up gift** lands nearby.
-- Prizes drift toward you when you get close, and disappear after 14 seconds (they blink at the end).
-- A coin counter shows on screen and on the final results screen.
+The prizes are there to **help the players win** (Issac's words).
+- **Small monster drops a gold coin.** It is a mystery helper, picked at random:
+  - **Speed boost** (6 seconds): your whole team runs faster.
+  - **Super shot** (8 seconds): your shots are faster and blast right through the other team and their goalie, so nothing can stop them. The ball glows like fire.
+  - **Freeze** (4 seconds): the other team turns to ice and can't move. The frozen goalie can't catch either.
+- **Big monster drops a diamond** (worth 5 coins):
+  - **Shield** (8 seconds): monsters can't make your team dizzy, and any dizzy teammates wake up.
+  - **Super goalie** (8 seconds): your goalie turns giant and gold and grabs everything that comes near.
+  - A **free power-up gift** lands nearby.
+- Prizes drift toward you when you get close, and disappear after 14 seconds (they blink at the end). Run into one or tap it.
+- Active helpers show as small timer tags under the pitch.
+- Prizes only drop in Level 2 (that's where monsters are).
 - **Coins are saved** on the device after every Level 2 match (even if you lose, you keep what you collected). Issac picked this option.
 - **Locker** (button on the title screen and the results screen): spend coins on
   - Balls: Classic (free), Gold (20), Fire (40), Galaxy (60), Rainbow (80)
@@ -37,7 +45,7 @@ A game by Obin and Oyun. This file keeps what they decided, in their words, so e
   - Tap an item you own to use it. Tap one you don't own to buy it. Unlocks stay after you close the game.
 - A full Level 2 clear is worth about 24 coins, so the first unlock takes about one good run.
 - Saved coins live in the browser on that one device. Another tablet or browser starts at zero.
-- **Still to ask Obin and Oyun:** what else should coins buy? (new stadiums, goal celebrations, team kits, a golden player?)
+- **Still to ask Obin and Oyun:** are the helpers the right ones? Too strong? Other ideas (a second ball, bigger goal for you, smaller goal for them, extra player for a few seconds)? What else should coins buy (stadiums, goal celebrations, kits, a golden player)?
 
 ## Controls
 - Field players: **W A S D** on a keyboard, or the big square at the bottom of the tablet.
